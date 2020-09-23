@@ -1,0 +1,170 @@
+name: sql-server-always-on-kubernetes
+version: 0.0.1
+description: "SQL Server 2019 Always On for Kubernetes"
+invocationImage: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes:0.0.1
+tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes/bundle:0.0.1
+custom: 
+  com.azure.creatuidef: 
+    - name: sql_sapassword
+      displayName: SQL Server Password
+      displayOrder: 2
+      tooltip: This is the password for the SQL sa user
+      validationMessage: Password must be at least 12 characters long and contain at least one letter, one number and one of !@#$%
+      validationRegex: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
+      uitype: Microsoft.Common.PasswordBox
+    - name: sql_masterkeypassword
+      displayName: SQL Server Master Password
+      displayOrder: 1
+      validationMessage: Password must be at least 12 characters long and contain at least one letter, one number and one of !@#$%
+      validationRegex: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
+      uitype: Microsoft.Common.PasswordBox
+    - name: namespace
+      tooltip: This is the Kubernetes namespace that SQL Server will be created in, this namespace will be created as part of the installation
+      displayName: Kubernetes Namespace for SQL Server
+      uitype: Microsoft.Common.TextBox
+      bladename: Kubernetes
+    - name: kubeconfig
+      tooltip: A Valid Kubernetes config for the Kuberentes cluster to install SQL Server in
+      displayName: Kubernetes Configuration
+      displayOrder: 3
+      uitype: Microsoft.Common.TextBox
+      bladename: Kubernetes
+
+credentials:
+  - name: kubeconfig
+    path: /root/.kube/config
+    description: A Kubeconfig for the target Kubernetes Cluster
+  - name: sql_sapassword
+    env: SQL_SAPASSWORD
+    description: The Password for the sa user in SQL Server
+    minLength: 12
+    pattern: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
+  - name: sql_masterkeypassword
+    env: SQL_MASTERKEYPASSWORD
+    description: The Password for the SQL Server Master Key
+    minLength: 12
+    pattern: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
+
+parameters:
+  - name: namespace
+    description: The Kuberbetes namespace to install Kubernetes into
+    type: string
+
+mixins:
+  - exec
+  - kubernetes
+
+install:
+  - kubernetes:
+      description: "Create SQL Operator"
+      manifests:
+        - /cnab/app/manifests/sql-operator.yaml
+      wait: true  
+
+  - exec:
+      description: Replace tokens in Yaml
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "replace-tokens"
+        - "{{ bundle.parameters.NAMESPACE }}"
+
+  - exec: 
+      description: "Create Kubernetes Secrets"
+      command: "kubectl"
+      arguments: 
+        - "create" 
+        - "secret" 
+        - "generic"         
+        - "sql-secrets" 
+        - "--from-literal=sapassword={{ bundle.credentials.sql_sapassword }}"
+        - "--from-literal=masterkeypassword={{ bundle.credentials.sql_masterkeypassword }}"
+        - "--namespace" 
+        - "{{ bundle.parameters.NAMESPACE }}"
+  
+  - exec: 
+      description: "Wait for SQL Custom Resource"
+      command: "bash"
+      arguments: 
+        - "ssao.sh" 
+        - "wait-for-sql-custom-resource"
+ 
+  - kubernetes:
+      description: "Create SQL Server"
+      manifests:
+        - /cnab/app/manifests/sql-server.yaml
+      wait: true  
+  
+  - kubernetes:
+      description: "Create Kubernetes Services"
+      manifests:
+        - /cnab/app/manifests/ag-services.yaml
+      wait: true  
+    
+  - exec: 
+      description: "Output Primary IP Address"
+      command: "bash"
+      arguments: 
+        - "ssao.sh" 
+        - "output-primary-ip-address"
+      outputs:
+        - name: ipaddress
+          path: /tmp/ipaddress
+
+upgrade:
+  - exec:
+      description: Replace tokens in Yaml
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "replace-tokens"
+        - "{{ bundle.parameters.NAMESPACE }}"
+
+  - kubernetes:
+      description: "Update SQL Operator"
+      manifests:
+        - /cnab/app/manifests/sql-operator.yaml
+      wait: true  
+ 
+  - kubernetes:
+      description: "Update SQL Server"
+      manifests:
+        - /cnab/app/manifests/sql-server.yaml
+      wait: true  
+  
+  - kubernetes:
+      description: "Update Kubernetes Services"
+      manifests:
+        - /cnab/app/manifests/ag-services.yaml
+      wait: true  
+    
+  - exec: 
+      description: "Output Primary IP Address"
+      command: "bash"
+      arguments: 
+        - "ssao.sh" 
+        - "output-primary-ip-address"
+      outputs:
+        - name: sql_ipaddress
+          path: /tmp/ipaddress
+
+
+uninstall:
+  - kubernetes:
+      description: "Delete SQL Server"
+      manifests:
+        - /cnab/app/manifests/sql-server.yaml
+      wait: true  
+  
+  - kubernetes:
+      description: "Delete Kubernetes Services"
+      manifests:
+        - /cnab/app/manifests/ag-services.yaml
+      wait: true  
+     
+outputs:
+  - name: sql_ipaddress
+    type: string
+    applyTo:
+      - install
+      - upgrade
