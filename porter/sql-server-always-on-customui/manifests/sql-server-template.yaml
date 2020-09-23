@@ -6,8 +6,8 @@ metadata:
   namespace: $KUBE_NAMESPACE
 spec:
   acceptEula: true
-  agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-CTP2.1-ubuntu
-  availabilityGroups: [$KUBE_NAMESPACE]
+  agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-latest
+  availabilityGroups: [ag1]
   instanceRootVolumeClaimTemplate:
     accessModes: [ReadWriteOnce]
     resources:
@@ -15,7 +15,7 @@ spec:
     storageClass: default
   saPassword:
     secretKeyRef: {key: sapassword, name: sql-secrets}
-  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-CTP3.0-ubuntu'}
+  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-latest'}
 ---
 apiVersion: v1
 kind: Service
@@ -34,8 +34,8 @@ metadata:
   namespace: $KUBE_NAMESPACE
 spec:
   acceptEula: true
-  agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-CTP2.1-ubuntu
-  availabilityGroups: [$KUBE_NAMESPACE]
+  agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-latest
+  availabilityGroups: [ag1]
   instanceRootVolumeClaimTemplate:
     accessModes: [ReadWriteOnce]
     resources:
@@ -43,7 +43,7 @@ spec:
     storageClass: default
   saPassword:
     secretKeyRef: {key: sapassword, name: sql-secrets}
-  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-CTP3.0-ubuntu'}
+  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-latest'}
 ---
 apiVersion: v1
 kind: Service
@@ -62,8 +62,8 @@ metadata:
   namespace: $KUBE_NAMESPACE
 spec:
   acceptEula: true
-  agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-CTP2.1-ubuntu
-  availabilityGroups: [$KUBE_NAMESPACE]
+  agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-latest
+  availabilityGroups: [ag1]
   instanceRootVolumeClaimTemplate:
     accessModes: [ReadWriteOnce]
     resources:
@@ -71,7 +71,7 @@ spec:
     storageClass: default
   saPassword:
     secretKeyRef: {key: sapassword, name: sql-secrets}
-  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-CTP3.0-ubuntu'}
+  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-latest'}
 ---
 apiVersion: v1
 kind: Service
