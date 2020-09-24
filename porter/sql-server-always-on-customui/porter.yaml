@@ -1,8 +1,7 @@
 name: sql-server-always-on-kubernetes-customui
-version: 0.1.0
+version: 0.2.0
 description: "SQL Server 2019 Always On for Kubernetes"
-invocationImage: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes-customui:0.1.0
-tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes/bundle-customui:0.1.0
+tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes-customui/bundle:0.2.0
 dockerfile: Dockerfile.tmpl
 custom: 
   com.azure.creatuidef: 
@@ -30,6 +29,20 @@ custom:
       displayOrder: 3
       uitype: Microsoft.Common.TextBox
       bladename: Kubernetes
+    - name: availabilitygroupname
+      tooltip: The SQL Server Availiabity Group Name to create
+      displayName: SQL Server AG Name
+      displayOrder: 5
+      uitype: Microsoft.Common.TextBox
+      bladename: SQL Server
+    - name: deploymentTime
+      hide: true
+    - name: cnab_installation_name
+      displayOrder: 4
+      tooltip: The CNAB Bundle installation name
+      displayName: Installation Name
+      bladename: SQL Server
+
 
 credentials:
   - name: kubeconfig
@@ -46,6 +59,10 @@ parameters:
   - name: namespace
     description: The Kuberbetes namespace to install Kubernetes into
     type: string
+  - name: availabilitygroupname
+    description: The name of the SQL Server Availbility Group to create
+    type: string
+    default: ag1
 
 mixins:
   - exec
@@ -59,6 +76,7 @@ install:
         - "ssao.sh" 
         - "replace-tokens"
         - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.availabilitygroupname }}"
 
   - kubernetes:
       description: "Create SQL Operator"
@@ -85,7 +103,7 @@ install:
       arguments: 
         - "ssao.sh" 
         - "wait-for-sql-custom-resource"
- 
+  
   - kubernetes:
       description: "Create SQL Server"
       manifests:
@@ -104,7 +122,8 @@ install:
       arguments: 
         - "ssao.sh" 
         - "output-primary-ip-address"
-        - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.namespace }}"        
+        - "{{ bundle.parameters.availabilitygroupname }}"
       outputs:
         - name: ipaddress
           path: /tmp/ipaddress
@@ -117,13 +136,14 @@ upgrade:
         - "ssao.sh" 
         - "replace-tokens"
         - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.availabilitygroupname }}"
 
   - kubernetes:
       description: "Update SQL Operator"
       manifests:
         - /cnab/app/manifests/sql-operator.yaml
       wait: true  
- 
+  
   - kubernetes:
       description: "Update SQL Server"
       manifests:
@@ -143,6 +163,7 @@ upgrade:
         - "ssao.sh" 
         - "output-primary-ip-address"
         - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.availabilitygroupname }}"
       outputs:
         - name: sql_ipaddress
           path: /tmp/ipaddress
@@ -160,7 +181,7 @@ uninstall:
       manifests:
         - /cnab/app/manifests/ag-services.yaml
       wait: true  
-     
+      
 outputs:
   - name: sql_ipaddress
     type: string

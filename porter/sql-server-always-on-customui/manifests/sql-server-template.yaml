@@ -7,7 +7,7 @@ metadata:
 spec:
   acceptEula: true
   agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-latest
-  availabilityGroups: [ag1]
+  availabilityGroups: [$AVAILABILITY_GROUP_NAME]
   instanceRootVolumeClaimTemplate:
     accessModes: [ReadWriteOnce]
     resources:
@@ -35,7 +35,7 @@ metadata:
 spec:
   acceptEula: true
   agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-latest
-  availabilityGroups: [ag1]
+  availabilityGroups: [$AVAILABILITY_GROUP_NAME]
   instanceRootVolumeClaimTemplate:
     accessModes: [ReadWriteOnce]
     resources:
@@ -63,7 +63,7 @@ metadata:
 spec:
   acceptEula: true
   agentsContainerImage: mcr.microsoft.com/mssql/ha:2019-latest
-  availabilityGroups: [ag1]
+  availabilityGroups: [$AVAILABILITY_GROUP_NAME]
   instanceRootVolumeClaimTemplate:
     accessModes: [ReadWriteOnce]
     resources:

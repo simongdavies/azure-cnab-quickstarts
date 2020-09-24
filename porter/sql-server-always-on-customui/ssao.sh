@@ -11,8 +11,9 @@ function wait-for-sql-custom-resource {
 function output-primary-ip-address {
     PRIMARY_IP=''
     KUBE_NAMESPACE=$1
+    AVAILABILITY_GROUP_NAME=$2
     while [[ -z $PRIMARY_IP ]]
-        do PRIMARY_IP=$(kubectl get svc/ag1-primary -n $KUBE_NAMESPACE -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' --ignore-not-found=true)
+        do PRIMARY_IP=$(kubectl get svc/$AVAILABILITY_GROUP_NAME-primary -n $KUBE_NAMESPACE -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' --ignore-not-found=true)
         echo 'Waiting for primary AG IP Address' 
         sleep 30
     done
@@ -22,6 +23,7 @@ function output-primary-ip-address {
 
 function replace-tokens {
     export KUBE_NAMESPACE=$1
+    export AVAILABILITY_GROUP_NAME=$2
     
     envsubst < /cnab/app/manifests/ag-services-template.yaml > /cnab/app/manifests/ag-services.yaml
     envsubst < /cnab/app/manifests/sql-operator-template.yaml > /cnab/app/manifests/sql-operator.yaml
