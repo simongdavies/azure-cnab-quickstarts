@@ -13,13 +13,12 @@ function output-primary-ip-address {
     KUBE_NAMESPACE=$1
     AVAILABILITY_GROUP_NAME=$2
     while [[ -z $PRIMARY_IP ]]
-        do PRIMARY_IP=$(kubectl get svc/$AVAILABILITY_GROUP_NAME-primary -n $KUBE_NAMESPACE -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' --ignore-not-found=true)
-        echo 'Waiting for primary AG IP Address' 
-        sleep 30
+    do  echo 'Waiting for primary AG IP Address' 
+        sleep 30 
+        PRIMARY_IP=$(kubectl get svc/$AVAILABILITY_GROUP_NAME-primary -n $KUBE_NAMESPACE -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' --ignore-not-found=true)
     done
-    echo ${PRIMARY_IP} > /tmp/ipaddress
+    echo -n ${PRIMARY_IP} > /tmp/ipaddress
 }
-
 
 function replace-tokens {
     export KUBE_NAMESPACE=$1
@@ -32,6 +31,16 @@ function replace-tokens {
 
 function create-namespace {
     kubectl create namespace $1
+}
+
+function create-database {
+  export PATH="$PATH:/opt/mssql-tools/bin"
+  mssql-cli -S $1 -U $2 -P $3 -d master -Q "CREATE DATABASE $4" 
+}
+
+function test-create-database {
+  export PATH="$PATH:/opt/mssql-tools/bin"
+  echo -n "mssql-cli -S $1 -U $2 -P $3 -d master -Q CREATE DATABASE $4" > /tmp/testdatabaseoutput
 }
 
 "$@"

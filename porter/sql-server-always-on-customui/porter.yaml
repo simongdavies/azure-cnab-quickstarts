@@ -1,8 +1,15 @@
 name: sql-server-always-on-kubernetes-customui
-version: 0.2.0
+version: 0.2.7
 description: "SQL Server 2019 Always On for Kubernetes"
-tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes-customui/bundle:0.2.0
+tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes-customui/bundle:0.2.7
 dockerfile: Dockerfile.tmpl
+
+customActions:
+  createdatabase:
+    description: "Creates a database"
+    modifies: true
+    stateless: false
+
 custom: 
   com.azure.creatuidef: 
     - name: sql_sapassword
@@ -59,10 +66,32 @@ parameters:
   - name: namespace
     description: The Kuberbetes namespace to install Kubernetes into
     type: string
+    applyTo:
+      - install
+      - upgrade
+      - uninstall
   - name: availabilitygroupname
     description: The name of the SQL Server Availbility Group to create
     type: string
     default: ag1
+    applyTo:
+      - install
+      - upgrade
+      - uninstall
+  - name: databasename
+    description: The name of the Database to perform the action on
+    type: string
+    applyTo:
+      - createdatabase
+      - testcreatedatabase
+  - name: sql_ipaddress
+    description: The IP Address of the SQL Server endpoint
+    type: string
+    source:
+      output: sql_ipaddress
+    applyTo:
+      - createdatabase
+      - testcreatedatabase
 
 mixins:
   - exec
@@ -125,7 +154,7 @@ install:
         - "{{ bundle.parameters.namespace }}"        
         - "{{ bundle.parameters.availabilitygroupname }}"
       outputs:
-        - name: ipaddress
+        - name: sql_ipaddress
           path: /tmp/ipaddress
 
 upgrade:
@@ -170,6 +199,15 @@ upgrade:
 
 
 uninstall:
+  - exec:
+      description: Replace tokens in Yaml
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "replace-tokens"
+        - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.availabilitygroupname }}"
+
   - kubernetes:
       description: "Delete SQL Server"
       manifests:
@@ -181,6 +219,33 @@ uninstall:
       manifests:
         - /cnab/app/manifests/ag-services.yaml
       wait: true  
+
+createdatabase:
+  - exec:
+      description: Create a Database
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "create-database"
+        - "{{ bundle.parameters.sql_ipaddress }}"
+        - "sa"
+        - "{{ bundle.credentials.sql_sapassword }}"
+        - "{{ bundle.parameters.databasename }}"
+
+testcreatedatabase:
+  - exec:
+      description: Test Create a Database
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "test-create-database"
+        - "{{ bundle.parameters.sql_ipaddress }}"
+        - "sa"
+        - "{{ bundle.credentials.sql_sapassword }}"
+        - "{{ bundle.parameters.databasename }}"
+      outputs:
+        - name: testdatabaseoutput
+          path: /tmp/testdatabaseoutput
       
 outputs:
   - name: sql_ipaddress
@@ -188,3 +253,7 @@ outputs:
     applyTo:
       - install
       - upgrade
+  - name: testdatabaseoutput
+    type: string
+    applyTo:
+      - testcreatedatabase

@@ -1,7 +1,7 @@
 name: sql-server-always-on-kubernetes
-version: 0.2.0
+version: 0.2.3
 description: "SQL Server 2019 Always On for Kubernetes"
-tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes/bundle:0.2.0
+tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes/bundle:0.2.3
 dockerfile: Dockerfile.tmpl
 
 credentials:
@@ -85,7 +85,7 @@ install:
         - "{{ bundle.parameters.namespace }}"        
         - "{{ bundle.parameters.availabilitygroupname }}"
       outputs:
-        - name: ipaddress
+        - name: sql_ipaddress
           path: /tmp/ipaddress
 
 upgrade:
@@ -130,6 +130,15 @@ upgrade:
 
 
 uninstall:
+  - exec:
+      description: Replace tokens in Yaml
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "replace-tokens"
+        - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.availabilitygroupname }}"
+
   - kubernetes:
       description: "Delete SQL Server"
       manifests:

@@ -13,11 +13,11 @@ function output-primary-ip-address {
     KUBE_NAMESPACE=$1
     AVAILABILITY_GROUP_NAME=$2
     while [[ -z $PRIMARY_IP ]]
-        do PRIMARY_IP=$(kubectl get svc/$AVAILABILITY_GROUP_NAME-primary -n $KUBE_NAMESPACE -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' --ignore-not-found=true)
-        echo 'Waiting for primary AG IP Address' 
-        sleep 30
+    do  echo 'Waiting for primary AG IP Address' 
+        sleep 30 
+        PRIMARY_IP=$(kubectl get svc/$AVAILABILITY_GROUP_NAME-primary -n $KUBE_NAMESPACE -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' --ignore-not-found=true)
     done
-    echo ${PRIMARY_IP} > /tmp/ipaddress
+    echo -n ${PRIMARY_IP} > /tmp/ipaddress
 }
 
 
