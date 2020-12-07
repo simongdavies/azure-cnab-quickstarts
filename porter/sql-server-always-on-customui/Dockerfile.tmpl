@@ -1,10 +1,11 @@
-FROM debian:stretch
+FROM debian:buster
 
 ARG BUNDLE_DIR
 
 COPY . $BUNDLE_DIR
-RUN apt-get update && apt-get install -y gnupg2 wget gettext-base apt-transport-https ca-certificates
+RUN apt-get update && apt-get install -y gnupg2 wget gettext-base apt-transport-https ca-certificates unixodbc-dev
 RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-RUN echo "deb [arch=amd64] https://packages.microsoft.com/debian/9/prod stretch main"| tee /etc/apt/sources.list.d/mssql-cli.list
-RUN apt-get update && apt-get install -y  mssql-cli
-RUN apt-get install -f
+RUN echo "deb [arch=amd64] https://packages.microsoft.com/debian/10/prod buster main" > /etc/apt/sources.list.d/mssql-release.list
+RUN apt-get update
+RUN ACCEPT_EULA=Y apt-get install -y  mssql-tools unixodbc-dev
+ENV PATH="${PATH}:/opt/mssql-tools/bin"

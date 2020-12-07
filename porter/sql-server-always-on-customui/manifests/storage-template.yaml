@@ -1,0 +1,80 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: sql-data
+  namespace: $KUBE_NAMESPACE
+provisioner: kubernetes.io/azure-disk
+reclaimPolicy: Retain
+parameters:
+  cachingmode: ReadOnly
+  kind: $STORAGE_ACCOUNT_KIND
+  storageaccounttype: $STORAGE_ACCOUNT_TYPE
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: backup-data
+  namespace: $KUBE_NAMESPACE
+provisioner: kubernetes.io/azure-file
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+reclaimPolicy: Retain
+mountOptions:
+  - mfsymlinks
+  - cache=strict
+parameters:
+  skuName: Standard_LRS
+  secretNamespace: $KUBE_NAMESPACE
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name:  mssql1-data-pvc-$SERVICE_SUFFIX
+  namespace: $KUBE_NAMESPACE
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: sql-data
+  resources:
+    requests:
+      storage:  ${STORAGE_VOLUME_SIZE}Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mssql-backup-pvc-$SERVICE_SUFFIX
+  namespace: $KUBE_NAMESPACE
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: backup-data
+  resources:
+    requests:
+      storage: ${BACKUP_VOLUME_SIZE}Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name:  mssql2-data-pvc-$SERVICE_SUFFIX
+  namespace: $KUBE_NAMESPACE
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: sql-data
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name:  mssql3-data-pvc-$SERVICE_SUFFIX
+  namespace: $KUBE_NAMESPACE
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: sql-data
+  resources:
+    requests:
+      storage: 5Gi
+---

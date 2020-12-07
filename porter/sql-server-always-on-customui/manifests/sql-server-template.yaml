@@ -1,8 +1,8 @@
 apiVersion: mssql.microsoft.com/v1
 kind: SqlServer
 metadata:
-  labels: {name: mssql1, type: sqlservr}
-  name: mssql1
+  labels: {name: mssql1-$SERVICE_SUFFIX, type: sqlservr}
+  name: mssql1-$SERVICE_SUFFIX
   namespace: $KUBE_NAMESPACE
 spec:
   acceptEula: true
@@ -13,24 +13,43 @@ spec:
     resources:
       requests: {storage: 5Gi}
     storageClass: default
+  masterKeyPassword:
+    secretKeyRef: {key: masterkeypassword, name: sql-secrets}
   saPassword:
     secretKeyRef: {key: sapassword, name: sql-secrets}
-  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-latest'}
+  sqlServerPod:
+    securityContext:
+      runAsUser: 10001
+      fsGroup: 10001
+    volumes:
+    - name: mssqldb
+      persistentVolumeClaim:
+        claimName: mssql1-data-pvc-$SERVICE_SUFFIX
+    - name: mssqldbbackup
+      persistentVolumeClaim:
+        claimName: mssql-backup-pvc-$SERVICE_SUFFIX
+  sqlServerContainer: 
+    image: 'mcr.microsoft.com/mssql/server:2019-latest'
+    volumeMounts:
+    - name: mssqldb
+      mountPath: /var/opt/mssql
+    - name: mssqldbbackup
+      mountPath: /backup
 ---
 apiVersion: v1
 kind: Service
-metadata: {name: mssql1, namespace: $KUBE_NAMESPACE}
+metadata: {name: mssql1-$SERVICE_SUFFIX, namespace: $KUBE_NAMESPACE}
 spec:
   ports:
   - {name: tds, port: 1433}
-  selector: {name: mssql1, type: sqlservr}
-  type: LoadBalancer
+  selector: {name: mssql1-$SERVICE_SUFFIX, type: sqlservr}
+  type: ClusterIP
 ---
 apiVersion: mssql.microsoft.com/v1
 kind: SqlServer
 metadata:
-  labels: {name: mssql2, type: sqlservr}
-  name: mssql2
+  labels: {name: mssql2-$SERVICE_SUFFIX, type: sqlservr}
+  name: mssql2-$SERVICE_SUFFIX
   namespace: $KUBE_NAMESPACE
 spec:
   acceptEula: true
@@ -41,24 +60,43 @@ spec:
     resources:
       requests: {storage: 5Gi}
     storageClass: default
+  masterKeyPassword:
+    secretKeyRef: {key: masterkeypassword, name: sql-secrets}
   saPassword:
     secretKeyRef: {key: sapassword, name: sql-secrets}
-  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-latest'}
+  sqlServerPod:
+    securityContext:
+      runAsUser: 10001
+      fsGroup: 10001
+    volumes:
+    - name: mssqldb
+      persistentVolumeClaim:
+        claimName: mssql2-data-pvc-$SERVICE_SUFFIX
+    - name: mssqldbbackup
+      persistentVolumeClaim:
+        claimName: mssql-backup-pvc-$SERVICE_SUFFIX
+  sqlServerContainer: 
+    image: 'mcr.microsoft.com/mssql/server:2019-latest'
+    volumeMounts:
+    - name: mssqldb
+      mountPath: /var/opt/mssql
+    - name: mssqldbbackup
+      mountPath: /backup
 ---
 apiVersion: v1
 kind: Service
-metadata: {name: mssql2, namespace: $KUBE_NAMESPACE}
+metadata: {name: mssql2-$SERVICE_SUFFIX, namespace: $KUBE_NAMESPACE}
 spec:
   ports:
   - {name: tds, port: 1433}
-  selector: {name: mssql2, type: sqlservr}
-  type: LoadBalancer
+  selector: {name: mssql2-$SERVICE_SUFFIX, type: sqlservr}
+  type: ClusterIP
 ---
 apiVersion: mssql.microsoft.com/v1
 kind: SqlServer
 metadata:
-  labels: {name: mssql3, type: sqlservr}
-  name: mssql3
+  labels: {name: mssql3-$SERVICE_SUFFIX, type: sqlservr}
+  name: mssql3-$SERVICE_SUFFIX
   namespace: $KUBE_NAMESPACE
 spec:
   acceptEula: true
@@ -69,15 +107,34 @@ spec:
     resources:
       requests: {storage: 5Gi}
     storageClass: default
+  masterKeyPassword:
+    secretKeyRef: {key: masterkeypassword, name: sql-secrets}
   saPassword:
     secretKeyRef: {key: sapassword, name: sql-secrets}
-  sqlServerContainer: {image: 'mcr.microsoft.com/mssql/server:2019-latest'}
+  sqlServerPod:
+    securityContext:
+      runAsUser: 10001
+      fsGroup: 10001
+    volumes:
+    - name: mssqldb
+      persistentVolumeClaim:
+        claimName: mssql3-data-pvc-$SERVICE_SUFFIX
+    - name: mssqldbbackup
+      persistentVolumeClaim:
+        claimName: mssql-backup-pvc-$SERVICE_SUFFIX
+  sqlServerContainer: 
+    image: 'mcr.microsoft.com/mssql/server:2019-latest'
+    volumeMounts:
+    - name: mssqldb
+      mountPath: /var/opt/mssql
+    - name: mssqldbbackup
+      mountPath: /backup
 ---
 apiVersion: v1
 kind: Service
-metadata: {name: mssql3, namespace: $KUBE_NAMESPACE}
+metadata: {name: mssql3-$SERVICE_SUFFIX, namespace: $KUBE_NAMESPACE}
 spec:
   ports:
   - {name: tds, port: 1433}
-  selector: {name: mssql3, type: sqlservr}
-  type: LoadBalancer
+  selector: {name: mssql3-$SERVICE_SUFFIX, type: sqlservr}
+  type: ClusterIP

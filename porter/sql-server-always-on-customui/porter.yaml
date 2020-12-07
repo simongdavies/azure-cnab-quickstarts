@@ -1,55 +1,126 @@
 name: sql-server-always-on-kubernetes-customui
-version: 0.2.7
+version: 0.3.0
 description: "SQL Server 2019 Always On for Kubernetes"
-tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes-customui/bundle:0.2.7
+tag: cnabquickstarts.azurecr.io/porter/sql-server-always-on-kubernetes-customui/bundle:0.3.0
 dockerfile: Dockerfile.tmpl
 
 customActions:
-  createdatabase:
+  create_database:
     description: "Creates a database"
+    modifies: true
+    stateless: false
+  delete_database:
+    description: "Deletes a database"
+    modifies: true
+    stateless: false
+  get_database:
+    description: "Gets a database"
+    modifies: true
+    stateless: false
+  list_databases:
+    description: "List databases"
+    modifies: true
+    stateless: false
+  backup_database:
+    description: "Back up a database"
+    modifies: true
+    stateless: false
+  restore_database:
+    description: "Restore a database"
+    modifies: true
+    stateless: false
+  failover_primary:
+    description: "Failover primary"
     modifies: true
     stateless: false
 
 custom: 
-  com.azure.creatuidef: 
-    - name: sql_sapassword
-      displayName: SQL Server Password
-      displayOrder: 2
-      tooltip: This is the password for the SQL sa user
-      validationMessage: Password must be at least 12 characters long and contain at least one letter, one number and one of !@#$%
-      validationRegex: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
-      uitype: Microsoft.Common.PasswordBox
-    - name: sql_masterkeypassword
-      displayName: SQL Server Master Password
-      displayOrder: 1
-      validationMessage: Password must be at least 12 characters long and contain at least one letter, one number and one of !@#$%
-      validationRegex: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
-      uitype: Microsoft.Common.PasswordBox
-    - name: namespace
-      tooltip: This is the Kubernetes namespace that SQL Server will be created in, this namespace will be created as part of the installation
-      displayName: Kubernetes Namespace for SQL Server
-      uitype: Microsoft.Common.TextBox
-      bladename: Kubernetes
-    - name: kubeconfig
-      tooltip: A Valid Kubernetes config for the Kuberentes cluster to install SQL Server in
-      displayName: Kubernetes Configuration
-      displayOrder: 3
-      uitype: Microsoft.Common.TextBox
-      bladename: Kubernetes
-    - name: availabilitygroupname
-      tooltip: The SQL Server Availiabity Group Name to create
-      displayName: SQL Server AG Name
-      displayOrder: 5
-      uitype: Microsoft.Common.TextBox
-      bladename: SQL Server
-    - name: deploymentTime
-      hide: true
-    - name: cnab_installation_name
-      displayOrder: 4
-      tooltip: The CNAB Bundle installation name
-      displayName: Installation Name
-      bladename: SQL Server
-
+  com.azure.arm:
+    type: sqlserver
+    id: service_suffix
+    childtypes:
+      databases:
+        createupdate: create_database
+        delete: delete_database
+        get: get_database
+        list: list_databases
+        actions:
+          - backup: backup_database
+          - restore: restore_database
+  com.azure.creatuidef:
+    blades:
+      Kubernetes:
+        displayOrder: 2
+        label: Kubernetes Properties
+      SQLServer:
+        displayOrder: 1
+        label: SQL Server Properties
+    elements:
+      - name: sql_masterkeypassword
+        displayName: SQL Server Master Password
+        displayOrder: 1
+        tooltip: This is the password for the SQL Server Master user
+        validationMessage: Password must be at least 12 characters long and contain at least one letter, one number and one of !@#$%
+        validationRegex: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
+        uitype: Microsoft.Common.PasswordBox
+        bladename: SQLServer
+      - name: sql_sapassword
+        displayName: SQL Server Password
+        displayOrder: 2
+        tooltip: This is the password for the SQL sa user
+        validationMessage: Password must be at least 12 characters long and contain at least one letter, one number and one of !@#$%
+        validationRegex: ^((?=.*\d)(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%]).{12,})
+        uitype: Microsoft.Common.PasswordBox
+        bladename: SQLServer
+      - name: namespace
+        displayOrder: 1
+        tooltip: This is the Kubernetes namespace that SQL Server will be created in, this namespace will be created as part of the installation
+        displayName: Kubernetes Namespace for SQL Server
+        uitype: Microsoft.Common.TextBox
+        bladename: Kubernetes
+      - name: kubeconfig
+        tooltip: A Valid Kubernetes config for the Kuberentes cluster to install SQL Server in
+        displayName: Kubernetes Configuration
+        displayOrder: 2
+        uitype: Microsoft.Common.TextBox
+        bladename: Kubernetes
+      - name: availability_group_name
+        tooltip: The SQL Server Availiabity Group Name to create
+        displayName: SQL Server AG Name
+        displayOrder: 5
+        uitype: Microsoft.Common.TextBox
+        bladename: SQLServer
+      - name: data_storage_account_type
+        tooltip: The Azure storage account type for data
+        displayName: Storage Account Type
+        displayOrder: 6
+        uitype: Microsoft.Common.TextBox
+        bladename: SQLServer
+      - name: data_storage_account_kind
+        tooltip: The Azure account kind of storage for SQL Server Data
+        displayName: Storage Account Kind
+        displayOrder: 7
+        uitype: Microsoft.Common.TextBox
+        bladename: SQLServer
+      - name: storage_volume_size
+        tooltip: The size in Gigabytes of the data volume for SQL Server data
+        displayName: Data Volume Size
+        displayOrder: 3  
+        uitype: Microsoft.Common.TextBox
+        bladename: SQLServer
+      - name: backup_volume_size
+        tooltip: The size in Gigabytes of the backup data volume for SQL Server data
+        displayName: Backup Volume Size
+        displayOrder: 4  
+        uitype: Microsoft.Common.TextBox
+        bladename: SQLServer
+      - name: deploymentTime
+        hide: true
+      - name: cnab_installation_name
+        displayOrder: 8
+        tooltip: The CNAB Bundle installation name
+        displayName: Installation Name
+        bladename: SQLServer
 
 credentials:
   - name: kubeconfig
@@ -70,7 +141,9 @@ parameters:
       - install
       - upgrade
       - uninstall
-  - name: availabilitygroupname
+    source: 
+      output: namespace
+  - name: availability_group_name
     description: The name of the SQL Server Availbility Group to create
     type: string
     default: ag1
@@ -78,20 +151,84 @@ parameters:
       - install
       - upgrade
       - uninstall
-  - name: databasename
+      - create_database
+    source: 
+      output: availability_group_name
+  - name: service_suffix
+    description: A suffix to add to the service to allow multiple instances to run in a namespace
+    type: string
+    default: service
+    applyTo:
+      - install
+      - upgrade
+      - uninstall
+    source: 
+      output: service_suffix
+  - name: data_storage_account_type
+    description: The Azure account type of storage for SQL Server Data
+    type: string
+    applyTo:
+      - install
+      - upgrade
+    default: Standard_LRS  
+  - name: data_storage_account_kind
+    description: The Azure account kind of storage for SQL Server Data
+    type: string
+    applyTo:
+      - install
+      - upgrade
+    default: Managed 
+  - name: storage_volume_size
+    description: The size in Gigabytes of the data volume for SQL Server data
+    type: string
+    applyTo:
+      - install
+      - upgrade
+    default: 8 
+  - name: backup_volume_size
+    description: The size in Gigabytes of the backup data volume for SQL Server data
+    type: string
+    applyTo:
+      - install
+      - upgrade
+    default: 64
+  - name: database_name
     description: The name of the Database to perform the action on
     type: string
     applyTo:
-      - createdatabase
-      - testcreatedatabase
-  - name: sql_ipaddress
-    description: The IP Address of the SQL Server endpoint
+      - create_database
+      - delete_database
+      - get_database
+      - backup_database
+      - restore_database
+  - name: sql_primary_ipaddress
+    description: The Primary IP Address of the SQL Server endpoint
     type: string
     source:
-      output: sql_ipaddress
+      output: sql_primary_ipaddress
     applyTo:
-      - createdatabase
-      - testcreatedatabase
+      - create_database
+      - delete_database
+      - restore_database
+  - name: sql_secondary_ipaddress
+    description: The Primary IP Address of the SQL Server endpoint
+    type: string
+    source:
+      output: sql_secondary_ipaddress
+    applyTo:
+      - get_database
+      - list_databases
+      - backup_database
+  - name: backup_name
+    description: The Name of a backup to restore
+    type: string
+    applyTo:
+      - restore_database
+  - name: primary_container
+    description: The Name of a the container to make primary
+    type: string
+    applyTo:
+      - failover_primary
 
 mixins:
   - exec
@@ -105,7 +242,26 @@ install:
         - "ssao.sh" 
         - "replace-tokens"
         - "{{ bundle.parameters.namespace }}"
-        - "{{ bundle.parameters.availabilitygroupname }}"
+        - "{{ bundle.parameters.availability_group_name }}"
+        - "{{ bundle.parameters.service_suffix }}"
+        - "{{ bundle.parameters.data_storage_account_type }}"
+        - "{{ bundle.parameters.data_storage_account_kind }}"
+        - "{{ bundle.parameters.storage_volume_size }}"
+        - "{{ bundle.parameters.backup_volume_size }}"
+ 
+  - exec:
+      description: Create Namespace
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "create-namespace"
+        - "{{ bundle.parameters.namespace }}"
+
+  - kubernetes:
+      description: "Create Storage Resources"
+      manifests:
+        - /cnab/app/manifests/storage.yaml
+      wait: true  
 
   - kubernetes:
       description: "Create SQL Operator"
@@ -115,15 +271,12 @@ install:
 
   - exec: 
       description: "Create Kubernetes Secrets"
-      command: "kubectl"
+      command: "bash"
       arguments: 
-        - "create" 
-        - "secret" 
-        - "generic"         
-        - "sql-secrets" 
-        - "--from-literal=sapassword={{ bundle.credentials.sql_sapassword }}"
-        - "--from-literal=masterkeypassword={{ bundle.credentials.sql_masterkeypassword }}"
-        - "--namespace" 
+        - "ssao.sh" 
+        - "create-or-update-secrets"
+        - "{{ bundle.credentials.sql_sapassword }}"
+        - "{{ bundle.credentials.sql_masterkeypassword }}"
         - "{{ bundle.parameters.namespace }}"
   
   - exec: 
@@ -146,16 +299,36 @@ install:
       wait: true  
     
   - exec: 
-      description: "Output Primary IP Address"
+      description: "Output IP Addresses"
       command: "bash"
       arguments: 
         - "ssao.sh" 
-        - "output-primary-ip-address"
+        - "output-ip-addresses"
         - "{{ bundle.parameters.namespace }}"        
-        - "{{ bundle.parameters.availabilitygroupname }}"
+        - "{{ bundle.parameters.availability_group_name }}"
+        - "{{ bundle.parameters.service_suffix }}"
       outputs:
-        - name: sql_ipaddress
-          path: /tmp/ipaddress
+        - name: sql_primary_ipaddress
+          path: /tmp/primary_ipaddress
+        - name: sql_secondary_ipaddress
+          path: /tmp/secondary_ipaddress
+
+  - exec: 
+      description: "Create Outputs"
+      command: "bash"
+      arguments: 
+        - "ssao.sh" 
+        - "create-install-ouputs"
+        - "{{ bundle.parameters.service_suffix }}"
+        - "{{ bundle.parameters.availability_group_name }}"
+        - "{{ bundle.parameters.namespace }}"
+      outputs:
+        - name: service_suffix
+          path: /tmp/service_suffix
+        - name: availability_group_name
+          path: /tmp/availability_group_name
+        - name: namespace
+          path: /tmp/namespace
 
 upgrade:
   - exec:
@@ -165,7 +338,18 @@ upgrade:
         - "ssao.sh" 
         - "replace-tokens"
         - "{{ bundle.parameters.namespace }}"
-        - "{{ bundle.parameters.availabilitygroupname }}"
+        - "{{ bundle.parameters.availability_group_name }}"
+        - "{{ bundle.parameters.service_suffix }}"
+        - "{{ bundle.parameters.data_storage_account_type }}"
+        - "{{ bundle.parameters.data_storage_account_kind }}"
+        - "{{ bundle.parameters.storage_volume_size }}"
+        - "{{ bundle.parameters.backup_volume_size }}"
+        
+  - kubernetes:
+      description: "Update Storage Resources"
+      manifests:
+        - /cnab/app/manifests/storage.yaml
+      wait: true  
 
   - kubernetes:
       description: "Update SQL Operator"
@@ -186,17 +370,19 @@ upgrade:
       wait: true  
     
   - exec: 
-      description: "Output Primary IP Address"
+      description: "Output IP Addresses"
       command: "bash"
       arguments: 
         - "ssao.sh" 
-        - "output-primary-ip-address"
-        - "{{ bundle.parameters.namespace }}"
-        - "{{ bundle.parameters.availabilitygroupname }}"
+        - "output-ip-addresses"
+        - "{{ bundle.parameters.namespace }}"        
+        - "{{ bundle.parameters.availability_group_name }}"
+        - "{{ bundle.parameters.service_suffix }}"
       outputs:
-        - name: sql_ipaddress
-          path: /tmp/ipaddress
-
+        - name: sql_primary_ipaddress
+          path: /tmp/primary_ipaddress
+        - name: sql_secondary_ipaddress
+          path: /tmp/secondary_ipaddress
 
 uninstall:
   - exec:
@@ -204,9 +390,10 @@ uninstall:
       command: bash
       arguments:
         - "ssao.sh" 
-        - "replace-tokens"
+        - "replace-sql-services-tokens"
         - "{{ bundle.parameters.namespace }}"
-        - "{{ bundle.parameters.availabilitygroupname }}"
+        - "{{ bundle.parameters.availability_group_name }}"
+        - "{{ bundle.parameters.service_suffix }}"
 
   - kubernetes:
       description: "Delete SQL Server"
@@ -220,40 +407,153 @@ uninstall:
         - /cnab/app/manifests/ag-services.yaml
       wait: true  
 
-createdatabase:
+create_database:
   - exec:
       description: Create a Database
       command: bash
       arguments:
         - "ssao.sh" 
         - "create-database"
-        - "{{ bundle.parameters.sql_ipaddress }}"
+        - "{{ bundle.parameters.sql_primary_ipaddress }}"
         - "sa"
         - "{{ bundle.credentials.sql_sapassword }}"
-        - "{{ bundle.parameters.databasename }}"
-
-testcreatedatabase:
+        - "{{ bundle.parameters.database_name }}"
+        - "{{ bundle.parameters.availability_group_name }}"
+delete_database:
   - exec:
-      description: Test Create a Database
+      description: Delete a Database
       command: bash
       arguments:
         - "ssao.sh" 
-        - "test-create-database"
-        - "{{ bundle.parameters.sql_ipaddress }}"
+        - "delete-database"
+        - "{{ bundle.parameters.sql_primary_ipaddress }}"
         - "sa"
         - "{{ bundle.credentials.sql_sapassword }}"
-        - "{{ bundle.parameters.databasename }}"
+        - "{{ bundle.parameters.database_name }}"
+get_database:
+  - exec:
+      description: Get Database Details
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "get-database"
+        - "{{ bundle.parameters.sql_secondary_ipaddress }}"
+        - "sa"
+        - "{{ bundle.credentials.sql_sapassword }}"
+        - "{{ bundle.parameters.database_name }}"
       outputs:
-        - name: testdatabaseoutput
-          path: /tmp/testdatabaseoutput
-      
+        - name: user_access_setting
+          path: /tmp/output0 
+        - name: database_state
+          path: /tmp/output1
+        - name: recovery_mode
+          path: /tmp/output2
+        - name: auto_create_stats
+          path: /tmp/output3
+        - name: auto_update_stats
+          path: /tmp/output4
+list_databases:
+  - exec:
+      description: List Databases
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "list-databases"
+        - "{{ bundle.parameters.sql_secondary_ipaddress }}"
+        - "sa"
+        - "{{ bundle.credentials.sql_sapassword }}"
+      outputs:
+        - name: list_database_details
+          path: /tmp/output0
+backup_database:
+  - exec:
+      description: Backup a Database
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "backup-database"
+        - "{{ bundle.parameters.sql_secondary_ipaddress }}"
+        - "sa"
+        - "{{ bundle.credentials.sql_sapassword }}"
+        - "{{ bundle.parameters.database_name }}"
+      outputs:
+        - name: backup_name
+          path: /tmp/output0
+restore_database:
+  - exec:
+      description: Restore a Database
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "restore-database"
+        - "{{ bundle.parameters.sql_primary_ipaddress }}"
+        - "sa"
+        - "{{ bundle.credentials.sql_sapassword }}"
+        - "{{ bundle.parameters.database_name }}"
+        - "{{ bundle.parameters.backup_name }}"
+failover_primary:
+  - exec:
+      description: Restore a Database
+      command: bash
+      arguments:
+        - "ssao.sh" 
+        - "replace-failover-tokens"
+        - "{{ bundle.parameters.namespace }}"
+        - "{{ bundle.parameters.primary_container }}"
+  - kubernetes:
+      description: "Run Failover Job"
+      manifests:
+        - /cnab/app/manifests/failover.yaml
+      wait: true  
+
 outputs:
-  - name: sql_ipaddress
+  - name: sql_primary_ipaddress
     type: string
     applyTo:
       - install
       - upgrade
-  - name: testdatabaseoutput
+  - name: sql_secondary_ipaddress
     type: string
     applyTo:
-      - testcreatedatabase
+      - install
+      - upgrade
+  - name: user_access_setting
+    type: string
+    applyTo:
+      - get_database
+  - name: database_state
+    type: string
+    applyTo:
+      - get_database
+  - name: recovery_mode
+    type: string
+    applyTo:
+      - get_database
+  - name: auto_create_stats
+    type: boolean
+    applyTo:
+      - get_database
+  - name: auto_update_stats
+    type: boolean
+    applyTo:
+      - get_database
+  - name: list_database_details
+    type: array
+    applyTo:
+      - list_databases
+  - name: backup_name
+    type: string
+    applyTo:
+      - backup_database
+  - name: availability_group_name
+    type: string
+    applyTo:
+      - install
+  - name: namespace
+    type: string
+    applyTo:
+      - install
+  - name: service_suffix
+    type: string
+    applyTo:
+      - install
